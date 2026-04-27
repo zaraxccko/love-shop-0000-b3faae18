@@ -8,6 +8,12 @@ import { useT } from "@/lib/i18n";
 import { loc } from "@/lib/loc";
 import { COUNTRIES, findDistrict } from "@/data/locations";
 import { useLocationToggles } from "@/store/locationToggles";
+import {
+  getDefaultPromoRule,
+  resolvePromoRule,
+  useLocationPromos,
+  type LocationPromoRule,
+} from "@/store/locationPromos";
 import type { Category, Product, LocalizedString, StashType, VariantStash } from "@/types/shop";
 import { STASH_TYPES } from "@/types/shop";
 import { Button } from "@/components/ui/button";
