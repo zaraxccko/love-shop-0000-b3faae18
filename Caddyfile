@@ -19,6 +19,9 @@
 
 	# Всё остальное → фронт (SPA)
 	handle {
+		header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+		header Pragma "no-cache"
+		header Expires "0"
 		reverse_proxy frontend:80
 	}
 
