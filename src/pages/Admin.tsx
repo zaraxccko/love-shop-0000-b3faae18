@@ -1449,3 +1449,71 @@ const DepositsTab = ({ standalone = false }: { standalone?: boolean }) => {
 };
 
 export default AdminPage;
+
+interface LocationsAdminProps { onBack: () => void }
+
+const LocationsAdmin = ({ onBack }: LocationsAdminProps) => {
+  const isDisabled = useLocationToggles((s) => s.isDisabled);
+  const toggle = useLocationToggles((s) => s.toggle);
+
+  return (
+    <div className="min-h-screen max-w-md mx-auto bg-background px-5 pt-6 pb-10">
+      <header className="flex items-center gap-3 mb-6">
+        <button
+          onClick={onBack}
+          className="w-10 h-10 rounded-2xl bg-card shadow-card flex items-center justify-center active:scale-95"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h1 className="font-display font-bold text-base flex-1 text-center">Локации</h1>
+        <span className="w-10" />
+      </header>
+
+      <p className="text-muted-foreground text-sm mb-4">
+        Отключённые локации показываются в каталоге тусклыми и недоступны для выбора.
+      </p>
+
+      <div className="space-y-4">
+        {COUNTRIES.map((country) => {
+          const countryOff = isDisabled(country.slug);
+          return (
+            <div key={country.slug} className="bg-card rounded-2xl shadow-card overflow-hidden">
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-3xl">{country.flag}</span>
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm truncate">{country.name.ru}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {countryOff ? "Страна отключена" : `${country.cities.length} городов`}
+                    </div>
+                  </div>
+                </div>
+                <Switch
+                  checked={!countryOff}
+                  onCheckedChange={() => toggle(country.slug)}
+                />
+              </div>
+
+              {!countryOff && country.cities.length > 1 && (
+                <div className="border-t divide-y">
+                  {country.cities.map((city) => {
+                    const cityOff = isDisabled(city.slug);
+                    return (
+                      <div key={city.slug} className="flex items-center justify-between px-4 py-3">
+                        <div className="text-sm">{city.name.ru}</div>
+                        <Switch
+                          checked={!cityOff}
+                          onCheckedChange={() => toggle(city.slug)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
