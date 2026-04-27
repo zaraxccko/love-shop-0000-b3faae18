@@ -126,7 +126,7 @@ function welcomeText(lang: WelcomeLang, rawName: string): string {
       `Закрытое сообщество авторских сладостей в Азии 🧸\n` +
       `\n` +
       `<b>География:</b>\n` +
-      `🇹🇭 Таиланд · 🇮🇩 Бали · 🇻🇳 Вьетнам · 🇲🇾 Куала-Лумпур\n` +
+      `🇹🇭 Таиланд · 🇮🇩 Бали · 🇻🇳 Вьетнам · 🇲🇾 КЛ · 🇦🇪 ОАЭ\n` +
       `\n` +
       `<b>Что внутри:</b>\n` +
       `• Только лучшие сорта и чистые кристаллы\n` +
@@ -145,7 +145,7 @@ function welcomeText(lang: WelcomeLang, rawName: string): string {
     `Private community of author sweets in Asia 🧸\n` +
     `\n` +
     `<b>Geography:</b>\n` +
-    `🇹🇭 Thailand · 🇮🇩 Bali · 🇻🇳 Vietnam · 🇲🇾 Kuala Lumpur\n` +
+    `🇹🇭 Thailand · 🇮🇩 Bali · 🇻🇳 Vietnam · 🇲🇾 KL · 🇦🇪 UAE\n` +
     `\n` +
     `<b>What's inside:</b>\n` +
     `• Only the best varieties and pure crystals\n` +
