@@ -62,6 +62,17 @@ function looksLikeHtml(contentType: string, text: string) {
 // Эндпоинты
 // ============================================================
 
+export interface AdminUser {
+  tgId: string;
+  username?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  lang: string;
+  citySlug?: string | null;
+  createdAt: string;
+  ordersCount: number;
+}
+
 export interface MeUser {
   tgId: string;
   username?: string;
