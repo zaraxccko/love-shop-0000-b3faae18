@@ -150,7 +150,11 @@ export async function broadcast(opts: {
           failed++;
         } finally {
           processed++;
-          await opts.onProgress?.({ sent, failed, processed, total });
+          try {
+            await opts.onProgress?.({ sent, failed, processed, total });
+          } catch (err: any) {
+            console.warn(`[broadcast] progress update failed: ${err?.message ?? err}`);
+          }
         }
       })
     )
