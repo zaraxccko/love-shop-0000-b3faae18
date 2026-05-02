@@ -79,10 +79,10 @@ export const BroadcastTab = () => {
         text,
         image,
         button: btnText.trim() ? { text: btnText.trim(), url: btnUrl.trim() } : null,
-      }) as { queued?: number };
+      }) as { queued?: number; sent?: number; failed?: number };
       haptic("success");
       toast.success(
-        `Рассылка поставлена в очередь · ${(data.queued ?? recipients).toLocaleString("ru")} получателей`
+        `Готово · отправлено ${(data.sent ?? 0).toLocaleString("ru")}, ошибок ${(data.failed ?? 0).toLocaleString("ru")}`
       );
       setText("");
       setImage(null);
@@ -206,7 +206,7 @@ export const BroadcastTab = () => {
         className="w-full gradient-primary h-12 text-base"
       >
         <Send className="w-4 h-4 mr-2" />
-        {sending ? "Отправка..." : `Разослать · ${recipients.toLocaleString("ru")}`}
+        {sending ? "Рассылаю..." : `Разослать · ${recipients.toLocaleString("ru")}`}
       </Button>
     </TabsContent>
   );
