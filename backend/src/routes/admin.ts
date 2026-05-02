@@ -339,6 +339,50 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   );
 
+  // ============== USERS LIST ==============
+
+  app.get<{ Querystring: { limit?: string; offset?: string } }>(
+    "/admin/users",
+    { preHandler: requireAdmin },
+    async (req) => {
+      const limit = Math.min(Number(req.query.limit ?? 100), 500);
+      const offset = Number(req.query.offset ?? 0);
+
+      const [users, total] = await Promise.all([
+        prisma.user.findMany({
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          skip: offset,
+          select: {
+            tgId: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            lang: true,
+            citySlug: true,
+            createdAt: true,
+            _count: { select: { orders: true } },
+          },
+        }),
+        prisma.user.count(),
+      ]);
+
+      return {
+        users: users.map((u) => ({
+          tgId: u.tgId.toString(),
+          username: u.username,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          lang: u.lang,
+          citySlug: u.citySlug,
+          createdAt: u.createdAt.toISOString(),
+          ordersCount: u._count.orders,
+        })),
+        total,
+      };
+    }
+  );
+
 
   // ============== ANALYTICS ==============
 
