@@ -69,7 +69,10 @@ export async function broadcast(opts: {
         try {
           await sendOne({ chatId, text: opts.text, imageUrl: opts.imageUrl, button: opts.button });
           sent++;
-        } catch {
+        } catch (err: any) {
+          const code = err?.response?.body?.error_code ?? err?.code;
+          const desc = err?.response?.body?.description ?? err?.message;
+          console.warn(`[broadcast] failed chatId=${chatId}: ${code} — ${desc}`);
           failed++;
         }
       })
