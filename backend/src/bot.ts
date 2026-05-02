@@ -6,6 +6,40 @@ export const bot = new TelegramBot(env.telegramBotToken, { polling: true });
 
 // Telegram global limit: ~30 msg/sec across all chats. Keep some headroom.
 const queue = new PQueue({ concurrency: 1, intervalCap: 25, interval: 1000 });
+const SEND_TIMEOUT_MS = 30_000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function telegramCode(err: any) {
+  return err?.response?.body?.error_code ?? err?.code;
+}
+
+function telegramDescription(err: any) {
+  return String(err?.response?.body?.description ?? err?.message ?? "");
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function isParseModeError(err: any) {
+  return telegramCode(err) === 400 && /parse entities|can't parse|unsupported start tag/i.test(telegramDescription(err));
+}
+
+function isRecoverablePhotoError(err: any) {
+  const desc = telegramDescription(err);
+  return telegramCode(err) === 400 && /http url|file identifier|failed to get|wrong file|image|caption/i.test(desc);
+}
 
 interface SendOpts {
   chatId: number | string;
@@ -19,36 +53,73 @@ async function sendOne({ chatId, text, imageUrl, button }: SendOpts): Promise<vo
     ? { inline_keyboard: [[{ text: button.text, url: button.url }]] }
     : undefined;
 
+  const sendText = async (parseHtml: boolean) => {
+    await withTimeout(
+      bot.sendMessage(chatId, text, {
+        ...(parseHtml ? { parse_mode: "HTML" as const } : {}),
+        reply_markup,
+        disable_web_page_preview: false,
+      }),
+      SEND_TIMEOUT_MS,
+      `sendMessage chatId=${chatId}`
+    );
+  };
+
+  const sendTextWithFallback = async () => {
+    try {
+      await sendText(true);
+    } catch (err) {
+      if (!isParseModeError(err)) throw err;
+      await sendText(false);
+    }
+  };
+
+  const sendPhoto = async (parseHtml: boolean) => {
+    if (!imageUrl) return;
+    await withTimeout(
+      bot.sendPhoto(chatId, imageUrl, {
+        caption: text,
+        ...(parseHtml ? { parse_mode: "HTML" as const } : {}),
+        reply_markup,
+      }),
+      SEND_TIMEOUT_MS,
+      `sendPhoto chatId=${chatId}`
+    );
+  };
+
   let attempt = 0;
   while (attempt < 5) {
     try {
       if (imageUrl) {
-        await bot.sendPhoto(chatId, imageUrl, {
-          caption: text,
-          parse_mode: "HTML",
-          reply_markup,
-        });
+        try {
+          await sendPhoto(true);
+        } catch (err) {
+          if (isParseModeError(err)) {
+            await sendPhoto(false);
+          } else if (isRecoverablePhotoError(err)) {
+            console.warn(`[broadcast] photo skipped chatId=${chatId}: ${telegramDescription(err)}`);
+            await sendTextWithFallback();
+          } else {
+            throw err;
+          }
+        }
       } else {
-        await bot.sendMessage(chatId, text, {
-          parse_mode: "HTML",
-          reply_markup,
-          disable_web_page_preview: false,
-        });
+        await sendTextWithFallback();
       }
       return;
     } catch (err: any) {
-      const code = err?.response?.body?.error_code ?? err?.code;
+      const code = telegramCode(err);
       const retryAfter = err?.response?.body?.parameters?.retry_after;
       // 429 — flood control
       if (code === 429 && retryAfter) {
-        await new Promise((r) => setTimeout(r, (retryAfter + 1) * 1000));
+        await sleep((retryAfter + 1) * 1000);
         attempt++;
         continue;
       }
       // 403 (blocked) / 400 (chat not found) — пропускаем без ретрая
       if (code === 403 || code === 400) throw err;
       // прочие ошибки — экспоненциальная задержка
-      await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+      await sleep(1000 * 2 ** attempt);
       attempt++;
     }
   }
@@ -60,9 +131,12 @@ export async function broadcast(opts: {
   text: string;
   imageUrl?: string;
   button?: { text: string; url: string } | null;
+  onProgress?: (stats: { sent: number; failed: number; processed: number; total: number }) => void | Promise<void>;
 }): Promise<{ sent: number; failed: number }> {
   let sent = 0;
   let failed = 0;
+  let processed = 0;
+  const total = opts.recipients.length;
   await Promise.all(
     opts.recipients.map((chatId) =>
       queue.add(async () => {
@@ -74,6 +148,13 @@ export async function broadcast(opts: {
           const desc = err?.response?.body?.description ?? err?.message;
           console.warn(`[broadcast] failed chatId=${chatId}: ${code} — ${desc}`);
           failed++;
+        } finally {
+          processed++;
+          try {
+            await opts.onProgress?.({ sent, failed, processed, total });
+          } catch (err: any) {
+            console.warn(`[broadcast] progress update failed: ${err?.message ?? err}`);
+          }
         }
       })
     )
@@ -90,7 +171,11 @@ export async function notifyAdmins(text: string): Promise<void> {
     env.adminTgIds.map((id) =>
       queue.add(async () => {
         try {
-          await bot.sendMessage(Number(id), text, { parse_mode: "HTML" });
+          await withTimeout(
+            bot.sendMessage(Number(id), text, { parse_mode: "HTML" }),
+            SEND_TIMEOUT_MS,
+            `notifyAdmin chatId=${id}`
+          );
         } catch (err: any) {
           const code = err?.response?.body?.error_code ?? err?.code;
           const description = err?.response?.body?.description ?? err?.message;

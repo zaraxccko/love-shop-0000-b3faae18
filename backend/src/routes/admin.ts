@@ -515,22 +515,32 @@ export async function adminRoutes(app: FastifyInstance) {
       data: { segment, text, imageUrl: imageForSend, button: normalizedButton ?? undefined },
     });
 
-    (async () => {
-      console.log(`[broadcast] starting logId=${log.id}, recipients=${recipients.length}`);
-      const result = await broadcast({
-        recipients,
-        text,
-        imageUrl: imageForSend,
-        button: normalizedButton,
-      });
-      console.log(`[broadcast] done logId=${log.id}, sent=${result.sent}, failed=${result.failed}`);
-      await prisma.broadcastLog.update({
-        where: { id: log.id },
-        data: { sentCount: result.sent, failedCount: result.failed },
-      });
-    })().catch((e) => console.error("[broadcast] fatal:", e));
+    let lastProgressAt = 0;
+    console.log(`[broadcast] starting logId=${log.id}, recipients=${recipients.length}`);
 
-    return { queued: recipients.length, logId: log.id };
+    const result = await broadcast({
+      recipients,
+      text,
+      imageUrl: imageForSend,
+      button: normalizedButton,
+      onProgress: async ({ sent, failed, processed, total }) => {
+        const now = Date.now();
+        if (processed !== total && processed % 25 !== 0 && now - lastProgressAt < 5_000) return;
+        lastProgressAt = now;
+        await prisma.broadcastLog.update({
+          where: { id: log.id },
+          data: { sentCount: sent, failedCount: failed },
+        });
+      },
+    });
+
+    console.log(`[broadcast] done logId=${log.id}, sent=${result.sent}, failed=${result.failed}`);
+    await prisma.broadcastLog.update({
+      where: { id: log.id },
+      data: { sentCount: result.sent, failedCount: result.failed },
+    });
+
+    return { queued: recipients.length, sent: result.sent, failed: result.failed, logId: log.id };
   });
 }
 
