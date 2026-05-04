@@ -4,6 +4,7 @@ import { TrendingUp, Users, ShoppingBag, DollarSign, Activity, ChevronDown, Exte
 import { useAdminPanel } from "@/store/adminPanel";
 import { Admin, type AdminUser } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { openTelegramProfile } from "@/lib/telegram";
 
 const KPI = ({
   icon: Icon,
@@ -140,15 +141,8 @@ const UserRow = ({ user }: { user: AdminUser }) => {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => {
-              const tg = (window as any).Telegram?.WebApp;
-              const url = `https://t.me/${user.username}`;
-              if (tg?.openTelegramLink) {
-                e.preventDefault();
-                try { tg.openTelegramLink(url); } catch { try { tg.openLink?.(url); } catch {} }
-              } else if (tg?.openLink) {
-                e.preventDefault();
-                try { tg.openLink(url); } catch {}
-              }
+              e.preventDefault();
+              openTelegramProfile(user.username!);
             }}
             className="text-xs text-primary flex items-center gap-0.5 hover:underline"
           >
