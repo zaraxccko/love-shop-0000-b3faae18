@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { TabsContent } from "@/components/ui/tabs";
-import { TrendingUp, Users, ShoppingBag, DollarSign, Activity, ChevronDown, ExternalLink } from "lucide-react";
+import { TrendingUp, Users, ShoppingBag, DollarSign, Activity, ChevronDown } from "lucide-react";
 import { useAdminPanel } from "@/store/adminPanel";
 import { Admin, type AdminUser } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { openTelegramProfile } from "@/lib/telegram";
+import { haptic } from "@/lib/telegram";
+import { toast } from "@/hooks/use-toast";
 
 const KPI = ({
   icon: Icon,
