@@ -49,9 +49,9 @@ export const CartSheet = ({ open, onOpenChange, onCheckout }: CartSheetProps) =>
   const deliveryBtnRef = useRef<HTMLButtonElement>(null);
 
   // Если в корзине больше нет позиций от 3 г — выключаем доставку автоматически.
-  if (delivery && !canDeliver) {
-    setDelivery(false);
-  }
+  useEffect(() => {
+    if (delivery && !canDeliver) setDelivery(false);
+  }, [delivery, canDeliver, setDelivery]);
 
   const handleToggleDelivery = () => {
     if (!canDeliver) {
