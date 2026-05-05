@@ -41,6 +41,10 @@ export async function authRoutes(app: FastifyInstance) {
       },
     });
 
+    if (user.isBanned) {
+      return reply.code(403).send({ error: "banned" });
+    }
+
     const token = await reply.jwtSign({ tgId: tgId.toString() }, { expiresIn: "30d" });
 
     return {
