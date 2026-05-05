@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth } from "../auth/middleware.js";
-import { notifyAdmins } from "../bot.js";
+import { notifyAdmins, notifyOrdersChat } from "../bot.js";
 
 // Терпимая схема: фронт может слать строку либо как { productId } либо как { product: {...} }.
 // Подарки могут не иметь priceUSD/variantId. Главное — валидное qty и хоть какой-то идентификатор товара.
@@ -146,6 +146,9 @@ export async function orderRoutes(app: FastifyInstance) {
           promoLine;
         notifyAdmins(text).catch((err) =>
           req.log.error({ err }, "notifyAdmins failed for new order")
+        );
+        notifyOrdersChat(text).catch((err) =>
+          req.log.error({ err }, "notifyOrdersChat failed for new order")
         );
       } catch (err) {
         req.log.error({ err }, "failed to build admin notification");
