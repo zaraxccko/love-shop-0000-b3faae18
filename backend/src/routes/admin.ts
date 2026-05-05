@@ -86,6 +86,27 @@ export async function adminRoutes(app: FastifyInstance) {
         },
       });
 
+      // Уведомляем юзера в личку бота (как раньше): фото(а) + текст
+      try {
+        const caption = `✅ Ваш заказ #${order.id} подтверждён.${text ? "\n\n" + text : ""}`;
+        const fsSync = await import("node:fs");
+        if (photoPaths.length > 1) {
+          const media = photoPaths.slice(0, 10).map((p, i) => ({
+            type: "photo" as const,
+            media: fsSync.createReadStream(p) as any,
+            caption: i === 0 ? caption : undefined,
+          }));
+          await bot.sendMediaGroup(Number(order.userTgId), media as any);
+        } else if (photoPaths.length === 1) {
+          await bot.sendPhoto(Number(order.userTgId), fsSync.createReadStream(photoPaths[0]), { caption });
+        } else {
+          await bot.sendMessage(Number(order.userTgId), caption);
+        }
+      } catch (e) {
+        req.log.error({ err: e }, "failed to notify user about order confirm");
+      }
+
+      // Отстук в чат админов
       {
         const u = await prisma.user.findUnique({ where: { tgId: order.userTgId } }).catch(() => null);
         const who = tgMention(order.userTgId, u);
@@ -114,6 +135,13 @@ export async function adminRoutes(app: FastifyInstance) {
       await prisma.promoRedemption.deleteMany({ where: { orderId: order.id } }).catch((err) => {
         req.log.error({ err, orderId: order.id }, "failed to release promo redemption after order cancel");
       });
+      // Уведомляем юзера в личку бота (как раньше)
+      try {
+        await bot.sendMessage(Number(order.userTgId), `❌ Ваш заказ #${order.id} отклонён.`);
+      } catch (e) {
+        req.log.error({ err: e }, "failed to notify user about order cancel");
+      }
+      // Отстук в чат админов
       {
         const u = await prisma.user.findUnique({ where: { tgId: order.userTgId } }).catch(() => null);
         const who = tgMention(order.userTgId, u);
