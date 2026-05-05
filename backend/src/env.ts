@@ -18,6 +18,11 @@ export const env = {
     .map((s) => s.trim())
     .filter(Boolean)
     .map((s) => BigInt(s)),
+  moderatorTgIds: (process.env.MODERATOR_TG_IDS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => BigInt(s)),
   webappUrl: req("WEBAPP_URL"),
   uploadDir: process.env.UPLOAD_DIR ?? "/data/uploads",
   publicUploadUrl: req("PUBLIC_UPLOAD_URL"),
