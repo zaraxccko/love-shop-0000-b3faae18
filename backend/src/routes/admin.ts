@@ -9,6 +9,7 @@ import { env } from "../env.js";
 import { broadcast, bot, notifyOrdersChat } from "../bot.js";
 import { serializeProduct, serializeCategory } from "./catalog.js";
 import { serialize as serializeOrder } from "./orders.js";
+import { buildCancelNotification, buildProfitNotification } from "../orderNotifications.js";
 
 export async function adminRoutes(app: FastifyInstance) {
   // ============== AWAITING / HISTORY ==============
@@ -109,12 +110,7 @@ export async function adminRoutes(app: FastifyInstance) {
       // Отстук в чат админов
       {
         const u = await prisma.user.findUnique({ where: { tgId: order.userTgId } }).catch(() => null);
-        const who = tgMention(order.userTgId, u);
-        const { count, lines } = orderItemsSummary(order.items);
-        notifyOrdersChat(
-          `💸 <b>Новый профит</b> #${order.id}\n👤 ${who}\n💰 $${order.totalUSD.toFixed(2)}${order.crypto ? ` (${escapeHtml(order.crypto)})` : ""}\n📦 позиций: ${count}` +
-            (lines ? `\n${lines}` : "")
-        ).catch((err) => req.log.error({ err }, "notifyOrdersChat confirm failed"));
+        notifyOrdersChat(buildProfitNotification(order, u)).catch((err) => req.log.error({ err }, "notifyOrdersChat confirm failed"));
       }
 
       return serializeOrder(updated);
@@ -144,12 +140,7 @@ export async function adminRoutes(app: FastifyInstance) {
       // Отстук в чат админов
       {
         const u = await prisma.user.findUnique({ where: { tgId: order.userTgId } }).catch(() => null);
-        const who = tgMention(order.userTgId, u);
-        const { count, lines } = orderItemsSummary(order.items);
-        notifyOrdersChat(
-          `🚫 <b>Не оплачено / Отмена</b> #${order.id}\n👤 ${who}\n💰 $${order.totalUSD.toFixed(2)}${order.crypto ? ` (${escapeHtml(order.crypto)})` : ""}\n📦 позиций: ${count}` +
-            (lines ? `\n${lines}` : "")
-        ).catch((err) => req.log.error({ err }, "notifyOrdersChat cancel failed"));
+        notifyOrdersChat(buildCancelNotification(order, u)).catch((err) => req.log.error({ err }, "notifyOrdersChat cancel failed"));
       }
       return serializeOrder(updated);
     }
