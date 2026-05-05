@@ -72,3 +72,10 @@ export const useSession = create<SessionState>((set, get) => ({
 
 // Удобный селектор
 export const selectIsAdmin = (s: SessionState) => !!s.user?.isAdmin;
+
+// Глобальный перехват из api.ts: любой 403 banned → выставляем banned=true.
+if (typeof window !== "undefined") {
+  window.addEventListener("loveshop:banned", () => {
+    useSession.setState({ user: null, banned: true, loading: false, error: "banned" });
+  });
+}

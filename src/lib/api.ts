@@ -47,7 +47,20 @@ export async function api<T = unknown>(path: string, init: ReqInit = {}): Promis
     });
   }
   const data = text ? safeJson(text) : null;
-  if (!res.ok) throw new ApiError(res.status, `${res.status} ${res.statusText}`, data);
+  if (!res.ok) {
+    // Глобальный перехват бана: любой 403 {error:"banned"} переключает UI на экран блокировки.
+    if (
+      res.status === 403 &&
+      data && typeof data === "object" &&
+      (data as { error?: string }).error === "banned"
+    ) {
+      try {
+        tokenStore.set(null);
+        window.dispatchEvent(new CustomEvent("loveshop:banned"));
+      } catch {}
+    }
+    throw new ApiError(res.status, `${res.status} ${res.statusText}`, data);
+  }
   return data as T;
 }
 
