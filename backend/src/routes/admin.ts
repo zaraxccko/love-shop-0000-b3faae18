@@ -6,7 +6,7 @@ import crypto from "node:crypto";
 import { prisma } from "../db.js";
 import { requireAdmin, requireAdminOrModerator } from "../auth/middleware.js";
 import { env } from "../env.js";
-import { broadcast, notifyOrdersChat } from "../bot.js";
+import { broadcast, bot, notifyOrdersChat } from "../bot.js";
 import { serializeProduct, serializeCategory } from "./catalog.js";
 import { serialize as serializeOrder } from "./orders.js";
 
