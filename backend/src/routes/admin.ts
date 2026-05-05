@@ -118,7 +118,7 @@ export async function adminRoutes(app: FastifyInstance) {
           return `• ${escapeHtml(String(name))}${variant ? ` (${escapeHtml(String(variant))})` : ""} ×${qty}`;
         }).join("\n");
         notifyOrdersChat(
-          `✅ <b>Заказ оплачен</b> #${order.id}\n👤 ${who}\n💰 $${order.totalUSD.toFixed(2)}\n📦 позиций: ${itemsArr.length}` +
+          `💸 <b>Новый профит</b> #${order.id}\n👤 ${who}\n💰 $${order.totalUSD.toFixed(2)}\n📦 позиций: ${itemsArr.length}` +
             (itemsLines ? `\n${itemsLines}` : "")
         ).catch((err) => req.log.error({ err }, "notifyOrdersChat confirm failed"));
       }
