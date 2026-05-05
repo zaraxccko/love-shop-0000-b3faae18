@@ -146,6 +146,8 @@ export const Admin = {
   analytics: () => api<any>("/admin/analytics"),
   users: (limit = 100, offset = 0) =>
     api<{ users: AdminUser[]; total: number }>(`/admin/users?limit=${limit}&offset=${offset}`),
+  banUser: (tgId: string, banned: boolean) =>
+    api<{ tgId: string; isBanned: boolean }>(`/admin/users/${tgId}/ban`, { method: "POST", body: { banned } }),
   broadcast: (payload: any) => api("/broadcast", { method: "POST", body: payload }),
   promoList: () => api<Array<{ id: string; code: string; discountPct: number; active: boolean; createdAt: string; redemptions: number }>>("/admin/promo"),
   promoCreate: (payload: { code: string; discountPct: number; active?: boolean }) =>
