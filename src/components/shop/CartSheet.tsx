@@ -35,8 +35,10 @@ export const CartSheet = ({ open, onOpenChange, onCheckout }: CartSheetProps) =>
   const subtotal = useCart((s) => s.subtotalUSD());
   const delivery = useCart((s) => s.delivery);
   const toggleDelivery = useCart((s) => s.toggleDelivery);
+  const setDelivery = useCart((s) => s.setDelivery);
   const deliveryAddress = useCart((s) => s.deliveryAddress);
   const setDeliveryAddress = useCart((s) => s.setDeliveryAddress);
+  const canDeliver = useCart((s) => s.canDeliver());
   const total = useCart((s) => s.totalTHB());
   const t = useT();
   const lang = useI18n((s) => s.lang) ?? "ru";
@@ -46,7 +48,16 @@ export const CartSheet = ({ open, onOpenChange, onCheckout }: CartSheetProps) =>
   const scrollRef = useRef<HTMLDivElement>(null);
   const deliveryBtnRef = useRef<HTMLButtonElement>(null);
 
+  // Если в корзине больше нет позиций от 3 г — выключаем доставку автоматически.
+  if (delivery && !canDeliver) {
+    setDelivery(false);
+  }
+
   const handleToggleDelivery = () => {
+    if (!canDeliver) {
+      haptic("warning");
+      return;
+    }
     haptic("light");
     const wasOn = delivery;
     toggleDelivery();
