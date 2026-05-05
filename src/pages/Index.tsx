@@ -42,6 +42,7 @@ const Index = () => {
   const { isAdmin } = useAuth();
   const loginWithInitData = useSession((s) => s.loginWithInitData);
   const refreshMe = useSession((s) => s.refreshMe);
+  const banned = useSession((s) => s.banned);
   const hydrateCatalog = useCatalog((s) => s.hydrate);
   const hydrateAccount = useAccount((s) => s.hydrate);
 
