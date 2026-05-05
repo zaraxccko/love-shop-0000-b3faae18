@@ -119,13 +119,6 @@ export const OrderPaymentPage = ({ onBack, onPaid }: OrderPaymentPageProps) => {
 
   const handlePaid = async () => {
     if (submitting) return;
-    if (hasAwaitingOrder) {
-      clearCart();
-      await hydrateAccount().catch(() => {});
-      toast.success(tr("Ждём подтверждения", "Waiting for confirmation"));
-      onPaid();
-      return;
-    }
     if (realLines.length === 0) return;
     setSubmitting(true);
     const customerName = user?.first_name
