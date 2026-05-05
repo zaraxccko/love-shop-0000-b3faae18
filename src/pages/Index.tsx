@@ -26,6 +26,7 @@ import { findCity } from "@/data/locations";
 import { toast } from "sonner";
 import type { Product } from "@/types/shop";
 import AdminPage from "./Admin";
+import ModeratorPage from "./Moderator";
 
 type Screen = "shop" | "account" | "order-payment";
 type OrderPaymentOrigin = "shop" | "account";
@@ -39,7 +40,7 @@ const Index = () => {
   const catalogLoaded = useCatalog((s) => s.loaded);
 
   const { user, tg } = useTelegram();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isModerator } = useAuth();
   const loginWithInitData = useSession((s) => s.loginWithInitData);
   const refreshMe = useSession((s) => s.refreshMe);
   const banned = useSession((s) => s.banned);
@@ -67,6 +68,7 @@ const Index = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [showLocPicker, setShowLocPicker] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showModerator, setShowModerator] = useState(false);
   const [openProduct, setOpenProduct] = useState<Product | null>(null);
   const [screen, setScreen] = useState<Screen>("shop");
   const [orderPaymentOrigin, setOrderPaymentOrigin] = useState<OrderPaymentOrigin>("shop");
@@ -140,6 +142,8 @@ const Index = () => {
 
   // Admins open the shop by default and switch to the admin panel via the header button.
   if (isAdmin && showAdmin) return <AdminPage onExit={() => setShowAdmin(false)} />;
+  // Read-only moderators see only the analytics screen.
+  if (!isAdmin && isModerator && showModerator) return <ModeratorPage onExit={() => setShowModerator(false)} />;
 
   if (!lang) return <SplashLanguage onPicked={() => {}} />;
   // Captcha gate — admins тоже проходят (защита от ботов на входе).
@@ -183,6 +187,8 @@ const Index = () => {
         onLocationClick={() => setShowLocPicker(true)}
         showAdminButton={isAdmin}
         onAdminClick={() => setShowAdmin(true)}
+        showModeratorButton={!isAdmin && isModerator}
+        onModeratorClick={() => setShowModerator(true)}
         onAccountClick={() => setScreen("account")}
       />
 
