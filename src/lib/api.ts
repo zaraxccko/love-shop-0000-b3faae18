@@ -71,6 +71,7 @@ export interface AdminUser {
   citySlug?: string | null;
   createdAt: string;
   ordersCount: number;
+  isBanned?: boolean;
 }
 
 export interface MeUser {
