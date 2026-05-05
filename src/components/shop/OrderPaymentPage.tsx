@@ -152,6 +152,7 @@ export const OrderPaymentPage = ({ onBack, onPaid }: OrderPaymentPageProps) => {
       await hydrateAccount().catch(() => {});
     } catch (e: any) {
       const code = e?.body?.error;
+      const serverMsg = typeof e?.body?.message === "string" ? e.body.message : undefined;
       const msg = code === "order_already_submitted"
         ? tr("Заявка уже отправлена", "Order already submitted")
         : code === "delivery_address_required"
@@ -164,7 +165,10 @@ export const OrderPaymentPage = ({ onBack, onPaid }: OrderPaymentPageProps) => {
         ? tr("Промокод недействителен", "Promo code is invalid")
         : code === "promo_already_used"
         ? tr("Этот промокод уже использован", "You already used this promo")
-        : tr(`Не удалось оформить заказ${code ? `: ${code}` : ""}`, `Failed to place order${code ? `: ${code}` : ""}`);
+        : tr(
+            `Не удалось оформить заказ${serverMsg ? `: ${serverMsg}` : code ? `: ${code}` : ""}`,
+            `Failed to place order${serverMsg ? `: ${serverMsg}` : code ? `: ${code}` : ""}`
+          );
       haptic("error");
       toast.error(msg);
       console.error("[order] create failed", e);
