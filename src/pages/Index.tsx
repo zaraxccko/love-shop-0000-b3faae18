@@ -68,7 +68,6 @@ const Index = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [showLocPicker, setShowLocPicker] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
-  const [showModerator, setShowModerator] = useState(false);
   const [openProduct, setOpenProduct] = useState<Product | null>(null);
   const [screen, setScreen] = useState<Screen>("shop");
   const [orderPaymentOrigin, setOrderPaymentOrigin] = useState<OrderPaymentOrigin>("shop");
@@ -142,8 +141,8 @@ const Index = () => {
 
   // Admins open the shop by default and switch to the admin panel via the header button.
   if (isAdmin && showAdmin) return <AdminPage onExit={() => setShowAdmin(false)} />;
-  // Read-only moderators see only the analytics screen.
-  if (!isAdmin && isModerator && showModerator) return <ModeratorPage onExit={() => setShowModerator(false)} />;
+  // Read-only admins enter through the same shield button, but see only analytics.
+  if (!isAdmin && isModerator && showAdmin) return <ModeratorPage onExit={() => setShowAdmin(false)} />;
 
   if (!lang) return <SplashLanguage onPicked={() => {}} />;
   // Captcha gate — admins тоже проходят (защита от ботов на входе).
@@ -185,10 +184,8 @@ const Index = () => {
       <Header
         onCartClick={() => setCartOpen(true)}
         onLocationClick={() => setShowLocPicker(true)}
-        showAdminButton={isAdmin}
+        showAdminButton={isAdmin || isModerator}
         onAdminClick={() => setShowAdmin(true)}
-        showModeratorButton={!isAdmin && isModerator}
-        onModeratorClick={() => setShowModerator(true)}
         onAccountClick={() => setScreen("account")}
       />
 
