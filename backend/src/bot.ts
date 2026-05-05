@@ -241,7 +241,7 @@ function welcomeText(lang: WelcomeLang, rawName: string): string {
       `• Доставка в течении 40-60 минут на заказы от 3 гр (уточнять у оператора)\n` +
       `• Оплата в крипте: наша безопасность — ваша конфиденциальность\n` +
       `• Первый заказ — 15% 🎟 <code>SUMMER10</code> 🎟\n` +
-      `• Оператор: @angeI_x\n` +
+      `• Оператор: @oxescrow\n` +
       `\n` +
       `<b>🧊 Сделай свой трип незабываемым 🧊</b>`
     );
@@ -261,7 +261,7 @@ function welcomeText(lang: WelcomeLang, rawName: string): string {
     `• Delivery within 40-60 minutes for orders from 3g (check with operator)\n` +
     `• Payment in crypto: our safety — your confidentiality\n` +
     `• First order — 15% off 🎟 <code>SUMMER10</code> 🎟\n` +
-    `• Operator: @angeI_x\n` +
+    `• Operator: @oxescrow\n` +
     `\n` +
     `<b>🧊 Make your trip unforgettable 🧊</b>`
   );
