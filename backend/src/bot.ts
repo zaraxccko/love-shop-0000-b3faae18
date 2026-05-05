@@ -184,10 +184,12 @@ export async function broadcast(opts: {
 export async function notifyOrdersChat(text: string): Promise<void> {
   const chatId = env.ordersNotifyChatId;
   if (!chatId) {
-    throw new Error("OTSTUK_CHAT_ID is empty — order notification was NOT sent");
+    console.error("[notifyOrdersChat] OTSTUK_CHAT_ID / ORDERS_CHAT_ID / ORDERS_NOTIFY_CHAT_ID is empty — order notification was NOT sent");
+    return;
   }
   if (env.adminTgIds.some((id) => id.toString() === chatId)) {
-    throw new Error(`OTSTUK_CHAT_ID=${chatId} is an admin DM, not an otstuk chat`);
+    console.error(`[notifyOrdersChat] chatId=${chatId} is an admin DM, not otstuk chat — order notification was NOT sent`);
+    return;
   }
   try {
     await withTimeout(
@@ -195,20 +197,10 @@ export async function notifyOrdersChat(text: string): Promise<void> {
       SEND_TIMEOUT_MS,
       `notifyOrdersChat chatId=${chatId}`
     );
-    console.log(`[notifyOrdersChat] sent chatId=${chatId}`);
   } catch (err: any) {
-    if (isParseModeError(err)) {
-      await withTimeout(
-        bot.sendMessage(chatId, text.replace(/<[^>]+>/g, ""), { disable_web_page_preview: true }),
-        SEND_TIMEOUT_MS,
-        `notifyOrdersChat plain chatId=${chatId}`
-      );
-      console.log(`[notifyOrdersChat] sent plain chatId=${chatId}`);
-      return;
-    }
     const code = err?.response?.body?.error_code ?? err?.code;
     const description = err?.response?.body?.description ?? err?.message;
-    throw new Error(`notifyOrdersChat failed chatId=${chatId}: ${code ?? "?"} — ${description}`);
+    console.error(`[notifyOrdersChat] failed: ${code ?? "?"} — ${description}`);
   }
 }
 
