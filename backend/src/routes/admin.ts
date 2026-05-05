@@ -361,6 +361,7 @@ export async function adminRoutes(app: FastifyInstance) {
             lang: true,
             citySlug: true,
             createdAt: true,
+            isBanned: true,
             _count: { select: { orders: true } },
           },
         }),
@@ -377,11 +378,30 @@ export async function adminRoutes(app: FastifyInstance) {
           citySlug: u.citySlug,
           createdAt: u.createdAt.toISOString(),
           ordersCount: u._count.orders,
+          isBanned: u.isBanned,
         })),
         total,
       };
     }
   );
+
+  // Ban / unban a user
+  app.post<{ Params: { tgId: string }; Body: { banned: boolean } }>(
+    "/admin/users/:tgId/ban",
+    { preHandler: requireAdmin },
+    async (req, reply) => {
+      const tgId = (() => { try { return BigInt(req.params.tgId); } catch { return null; } })();
+      if (tgId === null) return reply.code(400).send({ error: "bad_tg_id" });
+      const banned = !!req.body?.banned;
+      const updated = await prisma.user.update({
+        where: { tgId },
+        data: { isBanned: banned },
+        select: { tgId: true, isBanned: true },
+      });
+      return { tgId: updated.tgId.toString(), isBanned: updated.isBanned };
+    }
+  );
+
 
 
   // ============== ANALYTICS ==============
@@ -504,10 +524,11 @@ export async function adminRoutes(app: FastifyInstance) {
       }
     }
 
-    const where =
+    const baseWhere =
       segment === "active" ? { orders: { some: {} } }
       : segment === "inactive" ? { orders: { none: {} } }
       : {};
+    const where = { ...baseWhere, isBanned: false };
     const users = await prisma.user.findMany({ where, select: { tgId: true } });
     const recipientIds = new Set<string>(users.map((u) => u.tgId.toString()));
     if (segment === "all") {

@@ -323,10 +323,28 @@ bot.on("message", (msg) => {
   });
 });
 
+async function isUserBanned(tgId: number): Promise<boolean> {
+  try {
+    const u = await prisma.user.findUnique({ where: { tgId: BigInt(tgId) }, select: { isBanned: true } });
+    return !!u?.isBanned;
+  } catch {
+    return false;
+  }
+}
+
 bot.onText(/\/start/, async (msg) => {
   try {
     await rememberTelegramUser(msg.from);
     const lang = pickLang(msg.from?.language_code);
+    if (msg.from?.id && (await isUserBanned(msg.from.id))) {
+      await bot.sendMessage(
+        msg.chat.id,
+        lang === "ru"
+          ? "🚫 Доступ к Love Shop ограничен. По вопросам обращайтесь к оператору @oxescrow."
+          : "🚫 Access to Love Shop is restricted. Contact operator @oxescrow for details."
+      );
+      return;
+    }
     const name = msg.from?.first_name || "";
     await bot.sendMessage(msg.chat.id, welcomeText(lang, name), {
       parse_mode: "HTML",
@@ -334,6 +352,7 @@ bot.onText(/\/start/, async (msg) => {
     });
   } catch {}
 });
+
 
 // Переключение языка приветствия прямо в сообщении.
 bot.on("callback_query", async (q) => {
