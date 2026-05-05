@@ -431,14 +431,14 @@ export async function adminRoutes(app: FastifyInstance) {
     const paidLikeOrders = ordersAll.filter((o) => ["paid", "in_delivery", "completed", "awaiting"].includes(o.status));
     const confirmedOrders = ordersAll.filter((o) => o.status === "completed");
     const orderUsers = new Set(paidLikeOrders.map((o) => o.userTgId.toString()));
-    const activeUserIds = new Set<string>(ordersAll.map((o) => o.userTgId.toString()));
+    const buyerUsers = new Set(confirmedOrders.map((o) => o.userTgId.toString()));
 
     const totals = {
       users: users.length,
       activations: users.length,
-      dau: countDistinctUsersSince(ordersAll, startOfToday),
-      wau: countDistinctUsersSince(ordersAll, startOf7d),
-      mau: countDistinctUsersSince(ordersAll, startOf30d),
+      dau: paidLikeOrders.filter((o) => o.createdAt >= startOfToday).length,
+      wau: paidLikeOrders.filter((o) => o.createdAt >= startOf7d).length,
+      mau: paidLikeOrders.filter((o) => o.createdAt >= startOf30d).length,
       gmvUSD: round2(paidLikeOrders.reduce((sum, o) => sum + o.totalUSD, 0)),
       ordersToday: paidLikeOrders.filter((o) => o.createdAt >= startOfToday).length,
       avgCheckUSD: paidLikeOrders.length
@@ -455,12 +455,13 @@ export async function adminRoutes(app: FastifyInstance) {
         captchaPassed: users.length,
         miniAppOpened: users.length,
         firstOrder: orderUsers.size,
+        firstPurchase: buyerUsers.size,
       },
       depositsFunnel: { created: 0, paid: 0, confirmed: 0 },
       activations7d: buildDailySeries(startOf7d, 7, (a, b) => users.filter((u) => u.createdAt >= a && u.createdAt < b).length),
       dau7d: buildDailySeries(startOf7d, 7, (a, b) => {
         const set = new Set<string>();
-        for (const o of ordersAll) if (o.createdAt >= a && o.createdAt < b) set.add(o.userTgId.toString());
+        for (const o of confirmedOrders) if (o.createdAt >= a && o.createdAt < b) set.add(o.userTgId.toString());
         return set.size;
       }),
       topProducts: buildTopProducts(paidLikeOrders),
