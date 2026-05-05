@@ -188,6 +188,12 @@ export const useCart = create<CartState>()(
         );
         return sub + (get().delivery ? DELIVERY_FEE_USD : 0);
       },
+      canDeliver: () => {
+        return get().lines.some((l) => {
+          const variant = l.product.variants?.find((v) => v.id === l.variantId);
+          return (variant?.grams ?? 0) >= 3;
+        });
+      },
       linesWithGifts: () => {
         const out: DisplayCartLine[] = [];
         const citySlug = useLocation.getState().city;
