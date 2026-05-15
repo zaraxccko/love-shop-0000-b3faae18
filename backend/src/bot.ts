@@ -49,11 +49,18 @@ function isReplyMarkupError(err: any) {
 interface SendOpts {
   chatId: number | string;
   text: string;
-  imageUrl?: string;
+  image?: string | Buffer;
   button?: { text: string; url: string } | null;
 }
 
-async function sendOne({ chatId, text, imageUrl, button }: SendOpts): Promise<void> {
+const PHOTO_CAPTION_LIMIT = 1024;
+
+async function sendOne({ chatId, text, image, button }: SendOpts): Promise<void> {
+  // Telegram limits sendPhoto caption to 1024 chars. If text is longer,
+  // send photo without caption first, then the full text as a separate message.
+  const longText = text.length > PHOTO_CAPTION_LIMIT;
+  const caption = image && !longText ? text : "";
+  const imageUrl: string | Buffer | undefined = image;
   const getReplyMarkup = (includeButton: boolean) =>
     includeButton && button ? { inline_keyboard: [[{ text: button.text, url: button.url }]] } : undefined;
 
