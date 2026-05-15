@@ -91,12 +91,16 @@ async function sendOne({ chatId, text, image, button }: SendOpts): Promise<void>
 
   const sendPhoto = async (parseHtml: boolean, includeButton: boolean) => {
     if (!imageUrl) return;
+    const photoOptions: any = {
+      ...(caption ? { caption } : {}),
+      ...(parseHtml && caption ? { parse_mode: "HTML" as const } : {}),
+      reply_markup: getReplyMarkup(includeButton && !longText),
+    };
+    const fileOptions = Buffer.isBuffer(imageUrl)
+      ? { filename: "image.jpg", contentType: "image/jpeg" }
+      : undefined;
     await withTimeout(
-      bot.sendPhoto(chatId, imageUrl, {
-        caption: text,
-        ...(parseHtml ? { parse_mode: "HTML" as const } : {}),
-        reply_markup: getReplyMarkup(includeButton),
-      }),
+      bot.sendPhoto(chatId, imageUrl as any, photoOptions, fileOptions as any),
       SEND_TIMEOUT_MS,
       `sendPhoto chatId=${chatId}`
     );
@@ -121,6 +125,8 @@ async function sendOne({ chatId, text, image, button }: SendOpts): Promise<void>
       if (imageUrl) {
         try {
           await sendPhotoWithFallback();
+          // Long text → send full text as a follow-up message (with button).
+          if (longText) await sendTextWithFallback();
         } catch (err) {
           if (isRecoverablePhotoError(err)) {
             console.warn(`[broadcast] photo skipped chatId=${chatId}: ${telegramDescription(err)}`);
