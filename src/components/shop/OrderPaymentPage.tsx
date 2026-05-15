@@ -132,7 +132,8 @@ export const OrderPaymentPage = ({ onBack, onPaid }: OrderPaymentPageProps) => {
       ? `${user.first_name}${user.last_name ? " " + user.last_name : ""}${user.username ? ` (@${user.username})` : ""}`
       : user?.username ? `@${user.username}` : undefined;
     const snapshot = {
-      totalUSD: finalTotal,
+      // Send the pre-discount subtotal — backend re-applies the promo to avoid double-discount.
+      totalUSD: total,
       items: lines,
       delivery,
       deliveryAddress: delivery ? deliveryAddress : undefined,
