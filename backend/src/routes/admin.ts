@@ -541,8 +541,9 @@ export async function adminRoutes(app: FastifyInstance) {
       normalizedButton = { text: button.text, url };
     }
 
-    // Если пришёл data: URL — сохраняем картинку в uploads и шлём публичный URL
-    let imageForSend: string | undefined;
+    // Если пришёл data: URL — сохраняем картинку в uploads (для лога) и шлём байтами в Telegram
+    let imageForSend: string | Buffer | undefined;
+    let imageUrlForLog: string | undefined;
     if (image) {
       if (image.startsWith("data:image/")) {
         const m = image.match(/^data:image\/(\w+);base64,(.+)$/);
@@ -552,9 +553,11 @@ export async function adminRoutes(app: FastifyInstance) {
         await fs.mkdir(env.uploadDir, { recursive: true });
         const name = `bcast_${Date.now()}_${crypto.randomBytes(6).toString("hex")}.${ext}`;
         await fs.writeFile(path.join(env.uploadDir, name), buf);
-        imageForSend = `${env.publicUploadUrl.replace(/\/$/, "")}/${name}`;
+        imageUrlForLog = `${env.publicUploadUrl.replace(/\/$/, "")}/${name}`;
+        imageForSend = buf; // отправляем байтами — не зависит от доступности publicUploadUrl
       } else {
         imageForSend = image;
+        imageUrlForLog = image;
       }
     }
 
@@ -571,7 +574,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const recipients = [...recipientIds].map((id) => Number(id)).filter(Number.isSafeInteger);
 
     const log = await prisma.broadcastLog.create({
-      data: { segment, text, imageUrl: imageForSend, button: normalizedButton ?? undefined },
+      data: { segment, text, imageUrl: imageUrlForLog, button: normalizedButton ?? undefined },
     });
 
     let lastProgressAt = 0;
@@ -580,7 +583,7 @@ export async function adminRoutes(app: FastifyInstance) {
     const result = await broadcast({
       recipients,
       text,
-      imageUrl: imageForSend,
+      image: imageForSend,
       button: normalizedButton,
       onProgress: async ({ sent, failed, processed, total }) => {
         const now = Date.now();

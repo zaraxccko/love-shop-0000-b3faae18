@@ -49,11 +49,18 @@ function isReplyMarkupError(err: any) {
 interface SendOpts {
   chatId: number | string;
   text: string;
-  imageUrl?: string;
+  image?: string | Buffer;
   button?: { text: string; url: string } | null;
 }
 
-async function sendOne({ chatId, text, imageUrl, button }: SendOpts): Promise<void> {
+const PHOTO_CAPTION_LIMIT = 1024;
+
+async function sendOne({ chatId, text, image, button }: SendOpts): Promise<void> {
+  // Telegram limits sendPhoto caption to 1024 chars. If text is longer,
+  // send photo without caption first, then the full text as a separate message.
+  const longText = text.length > PHOTO_CAPTION_LIMIT;
+  const caption = image && !longText ? text : "";
+  const imageUrl: string | Buffer | undefined = image;
   const getReplyMarkup = (includeButton: boolean) =>
     includeButton && button ? { inline_keyboard: [[{ text: button.text, url: button.url }]] } : undefined;
 
@@ -84,12 +91,16 @@ async function sendOne({ chatId, text, imageUrl, button }: SendOpts): Promise<vo
 
   const sendPhoto = async (parseHtml: boolean, includeButton: boolean) => {
     if (!imageUrl) return;
+    const photoOptions: any = {
+      ...(caption ? { caption } : {}),
+      ...(parseHtml && caption ? { parse_mode: "HTML" as const } : {}),
+      reply_markup: getReplyMarkup(includeButton && !longText),
+    };
+    const fileOptions = Buffer.isBuffer(imageUrl)
+      ? { filename: "image.jpg", contentType: "image/jpeg" }
+      : undefined;
     await withTimeout(
-      bot.sendPhoto(chatId, imageUrl, {
-        caption: text,
-        ...(parseHtml ? { parse_mode: "HTML" as const } : {}),
-        reply_markup: getReplyMarkup(includeButton),
-      }),
+      bot.sendPhoto(chatId, imageUrl as any, photoOptions, fileOptions as any),
       SEND_TIMEOUT_MS,
       `sendPhoto chatId=${chatId}`
     );
@@ -114,6 +125,8 @@ async function sendOne({ chatId, text, imageUrl, button }: SendOpts): Promise<vo
       if (imageUrl) {
         try {
           await sendPhotoWithFallback();
+          // Long text → send full text as a follow-up message (with button).
+          if (longText) await sendTextWithFallback();
         } catch (err) {
           if (isRecoverablePhotoError(err)) {
             console.warn(`[broadcast] photo skipped chatId=${chatId}: ${telegramDescription(err)}`);
@@ -148,7 +161,7 @@ async function sendOne({ chatId, text, imageUrl, button }: SendOpts): Promise<vo
 export async function broadcast(opts: {
   recipients: number[];
   text: string;
-  imageUrl?: string;
+  image?: string | Buffer;
   button?: { text: string; url: string } | null;
   onProgress?: (stats: { sent: number; failed: number; processed: number; total: number }) => void | Promise<void>;
 }): Promise<{ sent: number; failed: number }> {
@@ -160,7 +173,7 @@ export async function broadcast(opts: {
     opts.recipients.map((chatId) =>
       queue.add(async () => {
         try {
-          await sendOne({ chatId, text: opts.text, imageUrl: opts.imageUrl, button: opts.button });
+          await sendOne({ chatId, text: opts.text, image: opts.image, button: opts.button });
           sent++;
         } catch (err: any) {
           const code = err?.response?.body?.error_code ?? err?.code;
